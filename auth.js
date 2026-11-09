@@ -14,7 +14,7 @@ async function hash(pw,salt){
 const norm=u=>u.trim().toLowerCase();
 const CL=window.MF_CLOUD&&window.MF_CLOUD.url?window.MF_CLOUD:null;
 const mail=id=>encodeURIComponent(id).replace(/%/g,'_')+'@monfrancais.app';
-async function sb(path,body,tok,method){ const r=await fetch(CL.url+path,{method:method||'POST',headers:{apikey:CL.key,'Content-Type':'application/json',Authorization:'Bearer '+(tok||CL.key),Prefer:'resolution=merge-duplicates,return=representation'},body:body?JSON.stringify(body):undefined}); const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.msg||j.error_description||j.message||'Error '+r.status); return j; }
+async function sb(path,body,tok,method){ const r=await fetch(CL.url+path,{method:method||'POST',headers:{apikey:CL.key,'Content-Type':'application/json',...(tok?{Authorization:'Bearer '+tok}:{}),Prefer:'resolution=merge-duplicates,return=representation'},body:body?JSON.stringify(body):undefined}); const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.msg||j.error_description||j.message||'Error '+r.status); return j; }
 window.mfPush=async function(data){ if(!CL) return; try{ const s=JSON.parse(get('monfr_sess')||'null'); if(!s) return;
   if(Date.now()/1000>s.exp-60){ const n=await sb('/auth/v1/token?grant_type=refresh_token',{refresh_token:s.rt}); s.at=n.access_token; s.rt=n.refresh_token; s.exp=n.expires_at; set('monfr_sess',JSON.stringify(s)); }
   await sb('/rest/v1/progress',{user_id:s.uid,data},s.at); }catch(e){ console.warn('nube',e); } };
