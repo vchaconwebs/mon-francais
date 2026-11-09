@@ -302,7 +302,7 @@ function unitPage(id, tab){
     c.querySelectorAll('[data-c]').forEach(b=>b.onchange=()=>{S.notes[b.dataset.c]=b.checked;save();});
   }
   }
-  if(target&&target!=='leccion'){ const el=$('#sec_'+target); if(el) setTimeout(()=>window.scrollTo({top:el.getBoundingClientRect().top+scrollY-80}),30); }
+  if(target&&target!=='leccion'){ const el=$('#sec_'+target); if(el) setTimeout(()=>window.scrollTo({top:el.getBoundingClientRect().top+scrollY-80,behavior:'instant'}),30); }
 }
 function grammarAll(){
   const us=units(S.level);
@@ -377,7 +377,7 @@ function nextLevel(){ main.innerHTML=C.nextInfo||''; const us=units('A1'); const
 function route(){
   const h=(location.hash||'#/').slice(2).split('/');
   if(!C[S.level] && !['next','guia'].includes(h[0])) { S.level='A1'; drawLevels(); }
-  drawSide(); drawTop(); window.scrollTo(0,0); document.body.dataset.page=h[0]||'home';
+  drawSide(); drawTop(); window.scrollTo({top:0,left:0,behavior:'instant'}); document.body.dataset.page=h[0]||'home';
   const R={'':home,guia:guide,gramatica:grammarAll,verbos:verbs,dico,repaso:review,fonetica:phonetics,delf,simulacro,next:nextLevel};
   if(R[h[0]]) R[h[0]](); else if(h[0]==='u') unitPage(h[1],h[2]); else home();
 }
