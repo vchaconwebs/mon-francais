@@ -177,3 +177,8 @@ body[data-page=u] .main{padding-top:0}
 }
 .chap-body,.toc,.sec,.sec-c{min-width:0}
 @media(max-width:980px){.chapter{grid-template-columns:minmax(0,1fr)}}
+.more{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+.more .muted{font-size:.85rem}
+td.fr,i.fr,b.fr{border-bottom:0}
+.selsay{position:absolute;z-index:120;border:0;background:var(--ink);color:var(--bg);font:inherit;font-weight:700;font-size:.85rem;padding:7px 12px;border-radius:999px;box-shadow:var(--sh2);cursor:pointer}
+.selsay[hidden]{display:none}

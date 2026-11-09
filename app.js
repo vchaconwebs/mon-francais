@@ -270,7 +270,7 @@ function unitPage(id, tab){
   const c=$('#c_'+tab);
   if(tab==='leccion'){
     c.innerHTML=`<div class="card"><h3>🎯 Al final de esta unidad sabrás…</h3><ul class="clean">${(u.goals||[]).map(g=>`<li>${g}</li>`).join('')}</ul></div>`+
-    (u.lessons||[]).map((s,j)=>`<div class="card" id="l_${j}"><h2 style="margin-top:0">${s.t}</h2>${s.h}</div>`).join('')+
+    (u.lessons||[]).map((s,j)=>{ const t=s.t.replace(/<[^>]+>/g,''); const p=`Soy hispanohablante y estoy aprendiendo francés desde cero (nivel A1). Explícame en español, con mucho detalle y paso a paso, este tema de gramática/vocabulario: «${t}» (unidad «${u.title}»). Incluye: para qué sirve, cómo se forma, reglas y excepciones, comparación con el español, errores típicos de hispanohablantes, 10 ejemplos en francés con traducción y pronunciación aproximada, y al final 5 ejercicios cortos con sus soluciones.`; return `<div class="card" id="l_${j}"><h2 style="margin-top:0">${s.t}</h2>${s.h}<div class="more"><a class="btn alt" href="https://chatgpt.com/?q=${encodeURIComponent(p)}" target="_blank" rel="noopener">🧑‍🏫 Explícamelo más a fondo</a><span class="muted">Abre ChatGPT con una explicación detallada de este tema, ejemplos y ejercicios.</span></div></div>`; }).join('')+
     (u.phon?`<div class="card"><h2 style="margin-top:0">👄 Pronunciación</h2>${u.phon}</div>`:'');
   }
   if(tab==='vocab'){
@@ -384,8 +384,23 @@ function route(){
   drawSide(); drawTop(); window.scrollTo({top:0,left:0,behavior:'instant'}); document.body.dataset.page=h[0]||'home';
   const R={'':home,guia:guide,gramatica:grammarAll,verbos:verbs,dico,repaso:review,fonetica:phonetics,delf,simulacro,next:nextLevel};
   const go=()=>{ if(R[h[0]]) R[h[0]](); else if(h[0]==='u') unitPage(h[1],h[2]); else home(); window.scrollTo({top:0,left:0,behavior:'instant'}); if(h[0]==='u'&&h[2]&&h[2]!=='leccion'){ const el=document.getElementById('sec_'+h[2]); if(el) window.scrollTo({top:el.getBoundingClientRect().top+scrollY-80,behavior:'instant'}); } };
-  if(document.startViewTransition&&!matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(go); else go();
+  if(window._routed&&document.startViewTransition&&document.visibilityState==='visible'&&!matchMedia('(prefers-reduced-motion: reduce)').matches){ let ran=false; const g=()=>{ran=true;go();}; try{ const vt=document.startViewTransition(g); vt.finished.catch(()=>{}); vt.ready.catch(()=>{ if(!ran) g(); }); }catch(e){ if(!ran) g(); } } else go(); window._routed=1;
 }
+const FRW=/\b(je|j'|tu|il|elle|on|nous|vous|ils|elles|le|la|les|l'|un|une|des|du|au|aux|de|d'|est|sont|suis|ai|as|avons|avez|ont|ne|pas|c'est|qu'|et|ou|mais|avec|pour|dans|sur|très|bien|mon|ma|mes|ton|ta|tes|son|sa|ses|ce|cette|ces|quel|quelle|oui|non|merci|bonjour)\b|[çèêëœîôûù]|[a-z](ez|ons|ent|eau|aux|oi|ou)\b/gi;
+const ESW=/\b(el|los|las|es|y|que|del|una|uno|por|para|con|sin|como|cuando|también|muy|hay|soy|eres|tengo|estoy|se usa|ejemplo)\b|[ñáíóú¿¡]/gi;
+function isFr(t){ t=t.trim(); if(t.length<2||t.length>220||/^[\d\s.,:;()\-–→+=×/%€]+$/.test(t)) return false; const f=(t.match(FRW)||[]).length, e=(t.match(ESW)||[]).length; return f>e || (f===e && /^[a-zàâçéèêëîïôûùüÿœ' \-]+$/i.test(t) && !/[ñáíóú]/i.test(t) && f>0); }
+const ESX=/[ñáíóú¿¡]|\b(el|los|las|y|que|del|por|para|con|sin|como|muy|hay|ser|estar|tener|ir|hacer|poder|deber|singular|plural|masculino|femenino|delante|vocal|regla|igual|presente|todo|siempre|nunca|cuando|uno|una|unos|de vez|solo|nada|mucho|poco)\b/i;
+function frCell(t){ t=t.trim(); return t.length>1 && t.length<220 && !ESX.test(t) && !/^[\d\s.,:;()\-–→+=×/%€]+$/.test(t) && !/^[-–]/.test(t); }
+function audioTables(root){ root.querySelectorAll('table').forEach(tb=>{ const hs=[...tb.querySelectorAll('tr:first-child th')].map(h=>h.textContent.toLowerCase());
+  tb.querySelectorAll('tr').forEach(tr=>[...tr.children].forEach((td,ci)=>{ if(td.tagName!=='TD'||td.dataset.say||td.querySelector('[data-say]')) return; const h=hs[ci]||'';
+    if(/español|significa|uso|cuándo|nota|lógica|sonido|contraste|qué |^qué|horas|diploma|duración|puntos|tienes|nivel|tiempo|formación|categor/.test(h)) return;
+    const t=td.textContent.replace(/\s*\(.*?\)\s*/g,' ').trim(); if(frCell(t)||isFr(t)){ td.dataset.say=t; td.classList.add('fr'); } })); }); }
+function audioAll(root){ audioTables(root); root.querySelectorAll('li i, p i, li b, p b, td i, td b, .chip, .note i, .tip i, .warn i').forEach(el=>{ if(el.closest('[data-say],button,a,.ex,.dlg,.fr')||el.querySelector('[data-say]')) return; const t=el.textContent.replace(/\s*\(.*?\)\s*/g,' ').trim(); if(el.tagName==='TD'&&el.children.length) return; if(isFr(t)||(el.tagName==='I'&&frCell(t))){ el.dataset.say=t; el.classList.add('fr'); } }); }
+new MutationObserver(()=>{ clearTimeout(window._aa); window._aa=setTimeout(()=>audioAll(main),60); }).observe(main,{childList:true,subtree:true});
+/* seleccionar cualquier texto para oírlo */
+const sb=document.createElement('button'); sb.className='selsay'; sb.textContent='🔊 Escuchar'; sb.hidden=true; document.body.appendChild(sb);
+document.addEventListener('selectionchange',()=>{ const sel=getSelection(), t=sel.toString().trim(); if(!t||t.length>400||!main.contains(sel.anchorNode)){ sb.hidden=true; return; } const r=sel.getRangeAt(0).getBoundingClientRect(); sb.style.top=(r.top+scrollY-42)+'px'; sb.style.left=Math.max(8,Math.min(innerWidth-120,r.left+scrollX+r.width/2-50))+'px'; sb.hidden=false; sb.dataset.t=t; });
+sb.addEventListener('mousedown',e=>e.preventDefault()); sb.onclick=()=>{ say(sb.dataset.t); };
 window.addEventListener('hashchange',route);
 /* tema claro/oscuro */
 function applyTheme(){ if(S.theme) document.documentElement.dataset.theme=S.theme; else delete document.documentElement.dataset.theme;
