@@ -13,7 +13,7 @@ async function hash(pw,salt){
 }
 const norm=u=>u.trim().toLowerCase();
 const CL=window.MF_CLOUD&&window.MF_CLOUD.url?{url:window.MF_CLOUD.url.replace(/\/(rest|auth)\/v1.*$/,'').replace(/\/+$/,''),key:window.MF_CLOUD.key}:null;
-const mail=id=>encodeURIComponent(id).replace(/%/g,'_')+'@monfrancais.app';
+const mail=id=>'u'+[...new TextEncoder().encode(id)].map(b=>b.toString(16).padStart(2,'0')).join('')+'@monfrancais.com';
 async function sb(path,body,tok,method){ const r=await fetch(CL.url+path,{method:method||'POST',headers:{apikey:CL.key,'Content-Type':'application/json',...(tok?{Authorization:'Bearer '+tok}:{}),Prefer:'resolution=merge-duplicates,return=representation'},body:body?JSON.stringify(body):undefined}); const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.msg||j.error_description||j.message||'Error '+r.status); return j; }
 window.mfPush=async function(data){ if(!CL) return; try{ const s=JSON.parse(get('monfr_sess')||'null'); if(!s) return;
   if(Date.now()/1000>s.exp-60){ const n=await sb('/auth/v1/token?grant_type=refresh_token',{refresh_token:s.rt}); s.at=n.access_token; s.rt=n.refresh_token; s.exp=n.expires_at; set('monfr_sess',JSON.stringify(s)); }
@@ -66,7 +66,7 @@ function render(mode){
   ${mode==='signup'?'<label for="ap2">Repite la contraseña</label><input id="ap2" type="password" autocomplete="new-password" required>':''}
   <div class="auth-err" id="aerr"></div>
   <button class="btn" type="submit">${mode==='login'?'Entrar →':'Crear cuenta y empezar →'}</button>
-  <p class="muted" style="font-size:.8rem;margin-top:16px">🔒 Tu cuenta y tu progreso se guardan solo en este navegador y este dispositivo.</p>
+  <p class="muted" style="font-size:.8rem;margin-top:16px">☁️ Tu progreso se guarda en la nube: entra desde cualquier dispositivo con tu usuario. La sesión queda abierta hasta que pulses «Salir».</p>
   </form></div>`;
   el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>render(b.dataset.m));
   el.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{ el.querySelector('#au').value=us[b.dataset.u].name||b.dataset.u; el.querySelector('#ap').focus(); });
@@ -88,7 +88,7 @@ function render(mode){
         const rows=await sb('/rest/v1/progress?select=data&user_id=eq.'+t.user.id,null,t.access_token,'GET');
         if(rows[0]&&rows[0].data) set('monfr_'+id,JSON.stringify(rows[0].data));
         all[id]={name,cloud:1}; set(USERS,JSON.stringify(all)); set(CUR,id); location.reload();
-      }catch(x){ err(/invalid/i.test(x.message)?'Usuario o contraseña incorrectos.':/registered|exists/i.test(x.message)?'Ese usuario ya existe.':x.message); }
+      }catch(x){ err(/invalid login|credentials/i.test(x.message)?'Usuario o contraseña incorrectos.':/registered|exists/i.test(x.message)?'Ese usuario ya existe.':x.message); }
       return;
     }
     if(mode==='signup'){
