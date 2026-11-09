@@ -328,7 +328,7 @@ function verbs(){
     vp.innerHTML=`<div class="ex"><div class="q">Presente de <b>${v.inf}</b> (${v.es}) con <b>${P[k]}</b></div><div class="row"><input autocomplete="off"><button class="btn">Comprobar</button><button class="btn alt" data-n>Otro</button></div><div class="fb"></div></div>`;
     const inp=vp.querySelector('input'),fb=vp.querySelector('.fb');
     const c=()=>{ const val=inp.value.replace(/^(je|j'|tu|il|elle|on|nous|vous|ils|elles)\s*/i,''); if(normA(val)===normA(ans)){fb.className='fb ok';fb.innerHTML='✔ '+esc(pron(P[k],ans));S.xp+=2;save();say(pron(P[k],ans));} else {fb.className='fb ko';fb.innerHTML='✘ Es: <b>'+esc(pron(P[k],ans))+'</b>';} };
-    vp.querySelector('.btn').onclick=c; inp.onkeydown=e=>{if(e.key==='Enter')c();}; vp.querySelector('[data-n]').onclick=q; inp.focus(); }
+    vp.querySelector('.btn').onclick=c; inp.onkeydown=e=>{if(e.key==='Enter')c();}; vp.querySelector('[data-n]').onclick=()=>{q();vp.querySelector('input').focus({preventScroll:true});}; }
   q();
 }
 function dico(){
@@ -379,7 +379,8 @@ function route(){
   if(!C[S.level] && !['next','guia'].includes(h[0])) { S.level='A1'; drawLevels(); }
   drawSide(); drawTop(); window.scrollTo({top:0,left:0,behavior:'instant'}); document.body.dataset.page=h[0]||'home';
   const R={'':home,guia:guide,gramatica:grammarAll,verbos:verbs,dico,repaso:review,fonetica:phonetics,delf,simulacro,next:nextLevel};
-  if(R[h[0]]) R[h[0]](); else if(h[0]==='u') unitPage(h[1],h[2]); else home();
+  const go=()=>{ if(R[h[0]]) R[h[0]](); else if(h[0]==='u') unitPage(h[1],h[2]); else home(); window.scrollTo({top:0,left:0,behavior:'instant'}); if(h[0]==='u'&&h[2]&&h[2]!=='leccion'){ const el=document.getElementById('sec_'+h[2]); if(el) window.scrollTo({top:el.getBoundingClientRect().top+scrollY-80,behavior:'instant'}); } };
+  if(document.startViewTransition&&!matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(go); else go();
 }
 window.addEventListener('hashchange',route);
 /* tema claro/oscuro */
