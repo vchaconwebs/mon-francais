@@ -18,7 +18,7 @@ function mark(key){ if(!S.done[key]){ S.done[key]=1; S.xp+=10; save(); toast('+1
 
 /* ---------- voz ---------- */
 let frVoice=null;
-function pickVoice(){ const v=speechSynthesis.getVoices(); frVoice=v.find(x=>/fr[-_]FR/i.test(x.lang))||v.find(x=>/^fr/i.test(x.lang))||null; }
+function pickVoice(){ const v=speechSynthesis.getVoices().filter(x=>/^fr/i.test(x.lang)); const sc=x=>(/fr[-_]FR/i.test(x.lang)?10:0)+(/natural|neural|online/i.test(x.name)?20:0)+(/google/i.test(x.name)?8:0)+(/denise|henri|eloise|vivienne|remy|amelie|thomas/i.test(x.name)?3:0); frVoice=v.sort((a,b)=>sc(b)-sc(a))[0]||null; }
 if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }
 window.say = function(t, rate){
   if(!('speechSynthesis' in window)) return;
@@ -295,9 +295,12 @@ function unitPage(id, tab){
   }
   if(tab==='produccion'){
     const k=u.id;
-    c.innerHTML=(u.prod||[]).map((p,j)=>`<div class="card"><h3>${p.t}</h3><p>${p.h}</p>${p.model?`<details><summary style="cursor:pointer;color:var(--blue)">Ver un modelo</summary><div class="note fr" data-say="${esc(p.model)}">${esc(p.model)}</div></details>`:''}${p.oral?'':`<textarea data-n="${k}_${j}" placeholder="Escribe aquí en francés… (se guarda solo)">${esc(S.notes[k+'_'+j]||'')}</textarea><button class="btn alt" data-read="${k}_${j}">🔊 Leer mi texto</button>`}</div>`).join('')+
+    const aiP=`Agis comme mon professeur de français. Je suis débutant (niveau A1) et je parle espagnol. Nous allons pratiquer une conversation orale sur ce thème : ${u.title} (${u.es}). Parle lentement, avec des phrases très simples. Pose-moi une question à la fois et attends ma réponse. Si je fais une erreur, corrige-moi gentiment en une phrase, puis continue. Si je ne comprends pas, répète plus simplement. Commence par me saluer.`;
+    const aiCard=`<div class="card ai"><h3>🤖 Conversación real con una IA</h3><p>Practica hablando en voz alta con una IA que responde con voz natural. Pulsa un botón: el mensaje para tu «profesor» se copia solo. Después activa el <b>modo voz</b> (icono de ondas 🎙️) y habla.</p><div class="row"><a class="btn" data-ai href="https://chatgpt.com/?q=${encodeURIComponent(aiP)}" target="_blank" rel="noopener">💬 Abrir ChatGPT</a><a class="btn alt" data-ai href="https://gemini.google.com/app" target="_blank" rel="noopener">✨ Abrir Gemini</a><a class="btn alt" data-ai href="https://claude.ai/new" target="_blank" rel="noopener">🧡 Abrir Claude</a></div><details><summary style="cursor:pointer;color:var(--blue)">Ver el mensaje</summary><div class="note">${esc(aiP)}</div></details></div>`;
+    c.innerHTML=aiCard+(u.prod||[]).map((p,j)=>`<div class="card"><h3>${p.t}</h3><p>${p.h}</p>${p.model?`<details><summary style="cursor:pointer;color:var(--blue)">Ver un modelo</summary><div class="note fr" data-say="${esc(p.model)}">${esc(p.model)}</div></details>`:''}${p.oral?'':`<textarea data-n="${k}_${j}" placeholder="Escribe aquí en francés… (se guarda solo)">${esc(S.notes[k+'_'+j]||'')}</textarea><button class="btn alt" data-read="${k}_${j}">🔊 Leer mi texto</button>`}</div>`).join('')+
     `<div class="card"><h3>✅ Autoevaluación de la unidad</h3>${(u.goals||[]).map((g,j)=>`<label class="check"><input type="checkbox" data-c="${k}_g${j}" ${S.notes[k+'_g'+j]?'checked':''}> Puedo ${g.charAt(0).toLowerCase()+g.slice(1)}</label>`).join('')}</div>`;
     c.querySelectorAll('textarea').forEach(t=>t.oninput=()=>{S.notes[t.dataset.n]=t.value;save();});
+    c.querySelectorAll('[data-ai]').forEach(a=>a.addEventListener('click',()=>{ try{navigator.clipboard.writeText(aiP);}catch(e){} toast('📋 Mensaje copiado: pégalo si no aparece');}));
     c.querySelectorAll('[data-read]').forEach(b=>b.onclick=()=>say(S.notes[b.dataset.read]||''));
     c.querySelectorAll('[data-c]').forEach(b=>b.onchange=()=>{S.notes[b.dataset.c]=b.checked;save();});
   }
