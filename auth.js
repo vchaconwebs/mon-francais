@@ -12,11 +12,17 @@ async function hash(pw,salt){
   let h=5381; for(const c of txt) h=((h<<5)+h+c.charCodeAt(0))|0; return 'f'+(h>>>0).toString(16);
 }
 const norm=u=>u.trim().toLowerCase();
+const CL=window.MF_CLOUD&&window.MF_CLOUD.url?window.MF_CLOUD:null;
+const mail=id=>encodeURIComponent(id).replace(/%/g,'_')+'@monfrancais.app';
+async function sb(path,body,tok,method){ const r=await fetch(CL.url+path,{method:method||'POST',headers:{apikey:CL.key,'Content-Type':'application/json',Authorization:'Bearer '+(tok||CL.key),Prefer:'resolution=merge-duplicates,return=representation'},body:body?JSON.stringify(body):undefined}); const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.msg||j.error_description||j.message||'Error '+r.status); return j; }
+window.mfPush=async function(data){ if(!CL) return; try{ const s=JSON.parse(get('monfr_sess')||'null'); if(!s) return;
+  if(Date.now()/1000>s.exp-60){ const n=await sb('/auth/v1/token?grant_type=refresh_token',{refresh_token:s.rt}); s.at=n.access_token; s.rt=n.refresh_token; s.exp=n.expires_at; set('monfr_sess',JSON.stringify(s)); }
+  await sb('/rest/v1/progress',{user_id:s.uid,data},s.at); }catch(e){ console.warn('nube',e); } };
 
 const cur=get(CUR);
 if(cur && users()[cur]){
   window.MF_KEY='monfr_'+cur; window.MF_USER=users()[cur].name||cur;
-  window.mfLogout=()=>{ try{ localStorage.removeItem(CUR); }catch(e){} location.hash='#/'; location.reload(); };
+  window.mfLogout=()=>{ try{ localStorage.removeItem(CUR); localStorage.removeItem('monfr_sess'); }catch(e){} location.hash='#/'; location.reload(); };
   return;
 }
 
@@ -70,6 +76,21 @@ function render(mode){
     const name=el.querySelector('#au').value.trim(), id=norm(name), pw=el.querySelector('#ap').value;
     if(!/^[\wÀ-ÿ.\- ]{2,30}$/.test(name)) return err('El usuario debe tener entre 2 y 30 letras o números.');
     const all=users();
+    if(CL){
+      if(mode==='signup'&&pw!==el.querySelector('#ap2').value) return err('Las contraseñas no coinciden.');
+      if(pw.length<6) return err('La contraseña debe tener al menos 6 caracteres.');
+      err('Conectando…');
+      try{
+        let t;
+        if(mode==='signup'){ t=await sb('/auth/v1/signup',{email:mail(id),password:pw,data:{name}}); if(!t.access_token) return err('Desactiva «Confirm email» en Supabase.'); }
+        else t=await sb('/auth/v1/token?grant_type=password',{email:mail(id),password:pw});
+        set('monfr_sess',JSON.stringify({at:t.access_token,rt:t.refresh_token,exp:t.expires_at,uid:t.user.id}));
+        const rows=await sb('/rest/v1/progress?select=data&user_id=eq.'+t.user.id,null,t.access_token,'GET');
+        if(rows[0]&&rows[0].data) set('monfr_'+id,JSON.stringify(rows[0].data));
+        all[id]={name,cloud:1}; set(USERS,JSON.stringify(all)); set(CUR,id); location.reload();
+      }catch(x){ err(/invalid/i.test(x.message)?'Usuario o contraseña incorrectos.':/registered|exists/i.test(x.message)?'Ese usuario ya existe.':x.message); }
+      return;
+    }
     if(mode==='signup'){
       if(all[id]) return err('Ese usuario ya existe. Elige otro o entra.');
       if(pw.length<4) return err('La contraseña debe tener al menos 4 caracteres.');

@@ -10,7 +10,7 @@ const LEVELS = ['A1','A2','B1','B2'];
 let S = {xp:0, done:{}, notes:{}, exam:{}, level:'A1'};
 const KEY = window.MF_KEY || 'monfr';
 try{ Object.assign(S, JSON.parse(localStorage.getItem(KEY)||'{}')); }catch(e){}
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} drawXP(); }
+let pushT; function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} drawXP(); clearTimeout(pushT); pushT=setTimeout(()=>window.mfPush&&window.mfPush(S),1500); }
 function drawXP(){ $('#xpBox').textContent = '⭐ ' + S.xp; }
 function mark(key){ if(!S.done[key]){ S.done[key]=1; S.xp+=10; save(); toast('+10 ⭐');
   const u=units(S.level).find(x=>key.startsWith(x.id+':')); if(u&&pct(u)===100){ confetti(120); toast('🎉 ¡Unidad '+u.n+' completada!'); } drawSide(); } }
