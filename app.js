@@ -298,7 +298,7 @@ function unitPage(id, tab){
     const aiP=`Agis comme mon professeur de français. Je suis débutant (niveau A1) et je parle espagnol. Nous allons pratiquer une conversation orale sur ce thème : ${u.title} (${u.es}). Mes objectifs (en espagnol) : ${(u.goals||[]).join(" ; ")}. Fais-moi pratiquer ces objectifs un par un. Parle lentement, avec des phrases très simples. Pose-moi une question à la fois et attends ma réponse. Si je fais une erreur, corrige-moi gentiment en une phrase, puis continue. Si je ne comprends pas, répète plus simplement. Commence par me saluer.`;
     const aiCard=`<div class="card ai"><h3>🤖 Conversación real con una IA</h3><p>Practica hablando en voz alta con una IA que responde con voz natural. Pulsa el botón: el mensaje para tu «profesor» se copia solo. Después activa el <b>modo voz</b> (icono de ondas 🎙️) y habla.</p><div class="row"><a class="btn" data-ai href="https://chatgpt.com/?q=${encodeURIComponent(aiP)}" target="_blank" rel="noopener">💬 Abrir ChatGPT</a></div><details><summary style="cursor:pointer;color:var(--blue)">Ver el mensaje</summary><div class="note">${esc(aiP)}</div></details></div>`;
     c.innerHTML=aiCard+(u.prod||[]).map((p,j)=>`<div class="card"><h3>${p.t}</h3><p>${p.h}</p>${p.model?`<details><summary style="cursor:pointer;color:var(--blue)">Ver un modelo</summary><div class="note fr" data-say="${esc(p.model)}">${esc(p.model)}</div></details>`:''}${p.oral?'':`<textarea data-n="${k}_${j}" placeholder="Escribe aquí en francés… (se guarda solo)">${esc(S.notes[k+'_'+j]||'')}</textarea><button class="btn alt" data-read="${k}_${j}">🔊 Leer mi texto</button>`}</div>`).join('')+
-    `<div class="card"><h3>✅ Autoevaluación de la unidad</h3>${(u.goals||[]).map((g,j)=>`<label class="check"><input type="checkbox" data-c="${k}_g${j}" ${S.notes[k+'_g'+j]?'checked':''}> Puedo ${g.charAt(0).toLowerCase()+g.slice(1)}</label>`).join('')}</div>`;
+    `<div class="card"><h3>✅ Autoevaluación de la unidad</h3>${(u.goals||[]).map((g,j)=>`<label class="check"><input type="checkbox" data-c="${k}_g${j}" ${(S.notes[k+'_g'+j]||goalAuto(u,j))?'checked':''}> Puedo ${g.charAt(0).toLowerCase()+g.slice(1)} ${goalAuto(u,j)?'<span class="pill g">✓ conseguido con los ejercicios</span>':''}</label>`).join('')}</div>`;
     c.querySelectorAll('textarea').forEach(t=>t.oninput=()=>{S.notes[t.dataset.n]=t.value;save();});
     c.querySelectorAll('[data-ai]').forEach(a=>a.addEventListener('click',()=>{ try{navigator.clipboard.writeText(aiP);}catch(e){} toast('📋 Mensaje copiado: pégalo si no aparece');}));
     c.querySelectorAll('[data-read]').forEach(b=>b.onclick=()=>say(S.notes[b.dataset.read]||''));
@@ -307,6 +307,7 @@ function unitPage(id, tab){
   }
   if(target&&target!=='leccion'){ const el=$('#sec_'+target); if(el) setTimeout(()=>window.scrollTo({top:el.getBoundingClientRect().top+scrollY-80,behavior:'instant'}),30); }
 }
+function goalAuto(u,j){ const k=exKeys(u), G=(u.goals||[]).length; if(!k.length||!G) return false; const a=Math.floor(j*k.length/G), b=Math.max(a+1,Math.floor((j+1)*k.length/G)); const r=k.slice(a,b); return r.filter(x=>S.done[x]).length/r.length>=0.8; }
 function grammarAll(){
   const us=units(S.level);
   main.innerHTML=`<h1>📘 Gramática completa ${S.level}</h1><p class="muted">Todas las explicaciones del curso en una sola página, para consultar.</p>
