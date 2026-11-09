@@ -12,7 +12,7 @@ async function hash(pw,salt){
   let h=5381; for(const c of txt) h=((h<<5)+h+c.charCodeAt(0))|0; return 'f'+(h>>>0).toString(16);
 }
 const norm=u=>u.trim().toLowerCase();
-const CL=window.MF_CLOUD&&window.MF_CLOUD.url?window.MF_CLOUD:null;
+const CL=window.MF_CLOUD&&window.MF_CLOUD.url?{url:window.MF_CLOUD.url.replace(/\/(rest|auth)\/v1.*$/,'').replace(/\/+$/,''),key:window.MF_CLOUD.key}:null;
 const mail=id=>encodeURIComponent(id).replace(/%/g,'_')+'@monfrancais.app';
 async function sb(path,body,tok,method){ const r=await fetch(CL.url+path,{method:method||'POST',headers:{apikey:CL.key,'Content-Type':'application/json',...(tok?{Authorization:'Bearer '+tok}:{}),Prefer:'resolution=merge-duplicates,return=representation'},body:body?JSON.stringify(body):undefined}); const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.msg||j.error_description||j.message||'Error '+r.status); return j; }
 window.mfPush=async function(data){ if(!CL) return; try{ const s=JSON.parse(get('monfr_sess')||'null'); if(!s) return;
