@@ -35,6 +35,7 @@ async function sync(){ if(synced||syncing||!window.mfPull) return; syncing=true;
   try{ const R=await window.mfPull(); const changed=merge(R); synced=true; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} drawXP(); pushNow(); if(changed&&!document.querySelector('.ex input:focus, textarea:focus')) route(); }
   catch(e){ console.warn('sync',e); } syncing=false; }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'&&pushT){ pushNow(); } });
+window.addEventListener('online',()=>{ if(synced) pushNow(); else sync(); });
 window.mfCloudFail=function(){ if(window._cf) return; window._cf=1; toast('⚠️ No se pudo guardar en la nube. Pulsa «Salir» y vuelve a entrar.'); };
 
 /* ---------- puntos (⭐) ----------
