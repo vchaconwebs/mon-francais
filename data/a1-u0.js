@@ -5,7 +5,7 @@ window.F = (q,a,x) => ({t:'fill',q,a,x});
 window.T = (q,a,x) => ({t:'trans',q:'Traduce: «'+q+'»',a,x});
 window.SEC = (s,e) => (e.sec=s, e);
 /* tablas rápidas */
-window.TB = (head, rows) => '<div class="tw"><table><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+r.map((c,i)=>i===0&&!/</.test(c)?'<td><span class="fr" data-say="'+c.replace(/"/g,'')+'">'+c+'</span></td>':'<td>'+c+'</td>').join('')+'</tr>').join('')+'</table></div>';
+window.TB = (head, rows) => '<div class="tw"><table><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+r.map((c,i)=>i===0&&c&&!/</.test(c)&&!/^(|regla|tipo|uso|función|registro|tiempo|nivel|abreviatura|nº|prueba|grafía|signo)$/i.test(head[0])?'<td><span class="fr" data-say="'+c.replace(/"/g,'')+'">'+c+'</span></td>':'<td>'+c+'</td>').join('')+'</tr>').join('')+'</table></div>';
 
 U({
 id:'u0', n:'00', title:'Bonjour !', es:'Dosier de descubrimiento: saludar, presentarse, tú o usted, la francofonía', color:'#6b7280',

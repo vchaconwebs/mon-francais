@@ -1,0 +1,31 @@
+/* ===== v30: ejercicios resueltos, ranking, puntos ===== */
+.ex.solved{border-color:var(--green);background:linear-gradient(90deg,color-mix(in srgb,var(--green) 7%,var(--panel)),var(--panel) 40%)}
+.xp small{font-size:.95em}
+.rk-list{padding:8px}
+.rk-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px}
+.rk-row+.rk-row{border-top:1px solid var(--line)}
+.rk-row.me{background:var(--soft);border-color:transparent}
+.rk-pos{width:34px;text-align:center;font-family:Fraunces,serif;font-weight:800;font-size:1.15rem;color:var(--muted)}
+.rk-av{width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;background:hsl(var(--h) 60% 45%)}
+.rk-name{flex:1;min-width:0;display:flex;flex-direction:column}
+.rk-name b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk-name small{color:var(--muted);font-size:.8rem}
+.rk-xp{font-family:Fraunces,serif;font-weight:800;font-size:1.15rem;white-space:nowrap}
+.ranks{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.rk-r{text-align:center;padding:12px 6px;border-radius:14px;background:var(--bg2);display:flex;flex-direction:column;gap:2px}
+.rk-r span{font-size:1.6rem}
+.rk-r small{color:var(--muted);font-size:.75rem}
+.rk-r.cur{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff}
+.rk-r.cur small{color:#ffffffcc}
+.foot-in{grid-template-columns:2fr 1fr 1fr 1fr 1fr}
+a.stat:hover{border-color:var(--blue)}
+@media(max-width:860px){
+  .xp{display:block;font-size:.8rem;padding:4px 9px}
+  .foot-in{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+  .ranks{grid-template-columns:repeat(3,1fr)}
+  .rk-row{gap:8px;padding:9px 6px}
+  .rk-pos{width:26px}
+  .xp small{display:none}
+}

@@ -14,10 +14,20 @@ async function hash(pw,salt){
 const norm=u=>u.trim().toLowerCase();
 const CL=window.MF_CLOUD&&window.MF_CLOUD.url?{url:window.MF_CLOUD.url.replace(/\/(rest|auth)\/v1.*$/,'').replace(/\/+$/,''),key:window.MF_CLOUD.key}:null;
 const mail=id=>'u'+[...new TextEncoder().encode(id)].map(b=>b.toString(16).padStart(2,'0')).join('')+'@monfrancais.com';
-async function sb(path,body,tok,method){ const r=await fetch(CL.url+path,{method:method||'POST',headers:{apikey:CL.key,'Content-Type':'application/json',...(tok?{Authorization:'Bearer '+tok}:{}),Prefer:'resolution=merge-duplicates,return=representation'},body:body?JSON.stringify(body):undefined}); const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.msg||j.error_description||j.message||'Error '+r.status); return j; }
-window.mfPush=async function(data){ if(!CL) return; try{ const s=JSON.parse(get('monfr_sess')||'null'); if(!s) return;
+async function sb(path,body,tok,method){ const r=await fetch(CL.url+path,{method:method||'POST',keepalive:true,headers:{apikey:CL.key,'Content-Type':'application/json',...(tok?{Authorization:'Bearer '+tok}:{}),Prefer:'resolution=merge-duplicates,return=representation'},body:body?JSON.stringify(body):undefined}); const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.msg||j.error_description||j.message||'Error '+r.status); return j; }
+async function token(){ const s=JSON.parse(get('monfr_sess')||'null'); if(!s) throw new Error('sin sesión');
   if(Date.now()/1000>s.exp-60){ const n=await sb('/auth/v1/token?grant_type=refresh_token',{refresh_token:s.rt}); s.at=n.access_token; s.rt=n.refresh_token; s.exp=n.expires_at; set('monfr_sess',JSON.stringify(s)); }
-  await sb('/rest/v1/progress',{user_id:s.uid,data},s.at); }catch(e){ console.warn('nube',e); } };
+  return s; }
+window.MF_CLOUD_ON=!!(CL&&get('monfr_sess'));
+/* guarda el progreso y el perfil público (nombre, puntos, racha) para el ranking */
+window.mfPush=async function(data,prof){ if(!CL||!get('monfr_sess')) return; try{ const s=await token();
+  await sb('/rest/v1/progress',{user_id:s.uid,data,updated_at:new Date().toISOString()},s.at);
+  if(prof&&prof.name){ try{ await sb('/rest/v1/profiles',Object.assign({user_id:s.uid,updated_at:new Date().toISOString()},prof),s.at); }catch(e){ window.MF_NOPROFILES=1; } }
+  }catch(e){ console.warn('nube',e); if(/jwt|token|refresh|401|sesión/i.test(e.message)&&window.mfCloudFail) window.mfCloudFail(); } };
+window.mfPull=async function(){ const s=await token(); const rows=await sb('/rest/v1/progress?select=data&user_id=eq.'+s.uid,null,s.at,'GET'); return rows[0]?rows[0].data:null; };
+/* consultas de solo lectura para el ranking */
+window.mfQuery=async function(q){ const s=await token(); return sb('/rest/v1/'+q,null,s.at,'GET'); };
+window.mfUid=function(){ try{ return JSON.parse(get('monfr_sess')||'null').uid; }catch(e){ return null; } };
 
 const cur=get(CUR);
 if(cur && users()[cur]){

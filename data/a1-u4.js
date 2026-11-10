@@ -58,7 +58,7 @@ Q('La persona que paga el alquiler:','le locataire','le propriétaire','le coloc
 T('Hay dos dormitorios.','Il y a deux chambres.'),
 T('No hay ascensor.','Il n’y a pas d’ascenseur./Il n\'y a pas d\'ascenseur.'),
 T('El sofá es azul.','Le canapé est bleu.')
-].map(e=>e),
+],
 prod:[
 {t:'Describe tu casa', h:'Describe tu vivienda (8–10 frases): tipo, tamaño, piso, habitaciones, muebles con colores y dónde están, y tu opinión.', model:'J’habite dans un appartement au troisième étage. Il y a un salon, deux chambres, une cuisine et une salle de bains. Le salon est clair et calme. Il y a un grand canapé gris devant la fenêtre et une table en bois au milieu. Dans ma chambre, il y a un lit, une armoire blanche et une étagère à côté du bureau. Il n’y a pas de balcon, mais il y a un parc en face. J’adore mon appartement !'},
 {t:'Las normas del piso compartido', h:'Escribe 5 reglas para tu piso compartido ideal con il faut, on doit, on peut, on ne peut pas.', model:'Il faut faire la vaisselle tous les jours. On doit sortir les poubelles le lundi. On peut inviter des amis le week-end. On ne peut pas fumer dans l’appartement. Il ne faut pas faire de bruit après 23 h.'},
