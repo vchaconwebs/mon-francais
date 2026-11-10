@@ -17,7 +17,7 @@ S.days=S.days||[]; S.bonus=S.bonus||{}; S.friends=S.friends||[]; S.done=S.done||
 for(const k in S.done) if(k.startsWith('exam')) delete S.done[k]; /* el examen ya no cuenta como ejercicio */
 /* ---------- nube: no se sube nada hasta haber fusionado con lo que hay guardado ---------- */
 let synced=!(window.mfPull&&window.MF_CLOUD_ON), pushT;
-function profile(){ const us=units('A1'); return {name:window.MF_USER||'', xp:S.xp||0, streak:streak(), done:Object.keys(S.done||{}).filter(k=>S.done[k]).length, week:wkey(), week_xp:(S.wk&&S.wk.id===wkey())?S.wk.xp:0}; }
+function profile(){ return {name:window.MF_USER||'', xp:S.xp||0, streak:streak(), done:Object.keys(S.done||{}).filter(k=>S.done[k]).length, week:wkey(), week_xp:(S.wk&&S.wk.id===wkey())?S.wk.xp:0}; }
 function pushNow(){ clearTimeout(pushT); if(synced&&window.mfPush) return window.mfPush(S,profile()); }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} drawXP(); clearTimeout(pushT); pushT=setTimeout(()=>{ if(synced) pushNow(); else sync(); },1500); }
 function merge(R){ if(!R||typeof R!=='object') return false; const before=JSON.stringify(S);
@@ -54,7 +54,7 @@ function drawXP(){ const r=rank(S.xp||0); $('#xpBox').innerHTML = '⭐ ' + (S.xp
 function mark(key){ if(S.done[key]) return; S.done[key]=1; let msg='+10 ⭐', n=10;
   if(S.lastXpDay!==dkey()){ S.lastXpDay=dkey(); n+=10; msg='+20 ⭐ (bonus diario 🔥)'; }
   touchDay(); addXP(n);
-  const u=units(S.level).find(x=>key.startsWith(x.id+':'));
+  const u=allUnits().find(x=>key.startsWith(x.id+':'));
   if(u&&pct(u)===100&&!S.bonus[u.id]){ S.bonus[u.id]=1; addXP(50); confetti(120); setTimeout(()=>toast('🎉 ¡Unidad '+u.n+' completada! +50 ⭐'),500); }
   save(); toast(msg); drawSide(); drawTop(); if(u) refreshUnit(u); }
 function refreshUnit(u){ const r=document.querySelector('.ub-ring'), t=document.querySelector('.toc-prog'); if(r) r.innerHTML=ring(pct(u),110,'#fff');
@@ -94,13 +94,13 @@ function drawLevels(){
 function drawSide(){
   const h=location.hash||'#/';
   const L=S.level, us=units(L);
-  let s=`<div class="grp">General</div>
+  let s=`<div class="side-lv">${LEVELS.map(l=>`<a href="${C[l]?'#/nivel/'+l:'#/next'}" class="${l===L?'on':''} ${C[l]?'':'lock'}">${l}</a>`).join('')}</div><div class="grp">General</div>
   <a href="#/" class="${h==='#/'?'on':''}">🏠 Inicio</a>
   <a href="#/guia" class="${h==='#/guia'?'on':''}">🧭 Cómo estudiar</a>
   <a href="#/ranking" class="${h==='#/ranking'?'on':''}">🏆 Ranking y amigos</a>`;
   if(us.length){
     s+=`<div class="grp">Unidades ${L}</div>`;
-    s+=us.map(u=>`<a href="#/u/${u.id}" class="${h.startsWith('#/u/'+u.id)?'on':''}"><span class="num">${ICON[u.id]||u.n}</span>${esc(u.title)}<span class="pc">${pct(u)}%</span></a>`).join('');
+    s+=us.map(u=>`<a href="#/u/${u.id}" class="${h.startsWith('#/u/'+u.id)?'on':''}"><span class="num">${ico(u)}</span>${esc(u.title)}<span class="pc">${pct(u)}%</span></a>`).join('');
   }
   s+=`<div class="grp">Herramientas</div>
   <a href="#/gramatica" class="${h==='#/gramatica'?'on':''}">📘 Gramática completa</a>
@@ -122,7 +122,7 @@ function drawTop(){
   const h=(location.hash||'#/').slice(2).split('/')[0];
   document.querySelectorAll('#topnav a').forEach(a=>a.classList.toggle('on',a.dataset.r===h));
   $('#topnav .dd-btn').classList.toggle('on',h==='u');
-  $('#ddUnits').innerHTML=units(S.level).map(u=>`<a href="#/u/${u.id}" style="--uc:${u.color}"><span class="dd-ico">${ICON[u.id]||'📘'}</span><span><small>Unidad ${u.n} · ${pct(u)}%</small><b>${esc(u.title)}</b></span></a>`).join('');
+  $('#ddUnits').innerHTML=units(S.level).map(u=>`<a href="#/u/${u.id}" style="--uc:${u.color}"><span class="dd-ico">${ico(u)}</span><span><small>Unidad ${u.n} · ${pct(u)}%</small><b>${esc(u.title)}</b></span></a>`).join('');
 }
 document.addEventListener('click',e=>{ const dd=e.target.closest('.dd'); document.querySelectorAll('.dd').forEach(d=>d.classList.toggle('open', d===dd && !d.classList.contains('open') && !!e.target.closest('.dd-btn'))); });
 window.addEventListener('scroll',()=>document.querySelector('.top').classList.toggle('scrolled',scrollY>10),{passive:true});
@@ -244,6 +244,10 @@ function dictation(el, words){
 }
 
 /* ---------- páginas ---------- */
+const LVN={A1:'Découverte',A2:'Survie',B1:'Seuil',B2:'Avancé'};
+function ico(u){ return ICON[u.id]||u.icon||'📘'; }
+function allUnits(){ return LEVELS.flatMap(l=>units(l)); }
+function lvPct(l){ const us=units(l); const all=us.reduce((a,u)=>a+exKeys(u).length,0), ok=us.reduce((a,u)=>a+exKeys(u).filter(k=>S.done[k]).length,0); return all?Math.round(100*ok/all):0; }
 const ICON={u0:'👋',u1:'🗼',u2:'🌍',u3:'👨‍👩‍👧',u4:'🏠',u5:'⏰',u6:'🏖️',u7:'🛍️',u8:'🥖'};
 function ring(p,size,col){ const r=size/2-5,c=2*Math.PI*r; return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="currentColor" stroke-opacity=".15" stroke-width="7"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${col||'var(--green)'}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p/100)}" transform="rotate(-90 ${size/2} ${size/2})" style="transition:stroke-dashoffset 1s"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="${size/4.4}" font-weight="800" fill="currentColor">${p}%</text></svg>`; }
 function streak(){ const d=S.days||[]; const day=i=>{ const t=new Date(); t.setDate(t.getDate()-i); return dkey(t); }; let i=d.includes(day(0))?0:1, n=0; while(d.includes(day(i))){ n++; i++; } return n; }
@@ -256,9 +260,9 @@ function home(){
   const cur=us.find(u=>pct(u)<100)||us[0];
   const hour=new Date().getHours(), hi=hour>=6&&hour<19?'Bonjour':'Bonsoir';
   main.innerHTML=`<div class="hero2">
-   <div class="hero-txt"><span class="eyebrow">Nivel ${L} · Découverte</span><h1>${hi} ! <span class="grad">Aprende francés</span> desde cero.</h1>
+   <div class="hero-txt"><span class="eyebrow">Nivel ${L} · ${LVN[L]||''}</span><h1>${hi} ! <span class="grad">${L==='A1'?'Aprende francés</span> desde cero.':'Sigue con tu francés</span>, nivel '+L+'.'}</h1>
    <p class="big">Gramática explicada en español, vocabulario con audio, diálogos, cultura francófona, cientos de ejercicios y un simulacro del examen oficial DELF.</p>
-   <div class="row"><a class="btn big-btn" href="#/u/${cur.id}">${ok?'Continuar':'Empezar'}: ${ICON[cur.id]||''} ${esc(cur.title)} →</a><a class="btn alt" href="#/guia">Cómo estudiar</a></div></div>
+   <div class="row"><a class="btn big-btn" href="#/u/${cur.id}">${ok?'Continuar':'Empezar'}: ${ico(cur)} ${esc(cur.title)} →</a><a class="btn alt" href="#/guia">Cómo estudiar</a></div></div>
    <div class="hero-ring">${ring(g,170,'url(#gr)')}<svg width="0" height="0"><defs><linearGradient id="gr"><stop offset="0" stop-color="#2346c8"/><stop offset="1" stop-color="#e0313f"/></linearGradient></defs></svg><div class="muted" style="text-align:center;font-weight:600">progreso ${L}</div></div>
   </div>
   <div class="stats">
@@ -268,13 +272,14 @@ function home(){
    <div class="stat"><span>📚</span><b>${nWords}</b><small>palabras</small></div>
   </div>
   ${w?`<div class="wod"><div><span class="eyebrow">Mot du jour</span><div class="wod-fr fr" data-say="${esc(w.fr)}">${esc(w.fr)}</div><div class="muted">${esc(w.es)} · <i>${esc(w.cat)}</i></div></div><button class="btn alt" data-say="${esc(w.fr)}">🔊 Escuchar</button></div>`:''}
-  <h2>Tu ruta de aprendizaje</h2><div class="path">${us.map((u,i)=>{const p=pct(u);return `<a class="unit-card u2" href="#/u/${u.id}" style="--uc:${u.color};animation-delay:${i*40}ms"><div class="uc-top"><span class="uc-ico">${ICON[u.id]||'📘'}</span>${ring(p,54,u.color)}</div><div class="n">${u.n}</div><b>${esc(u.title)}</b><div class="muted uc-es">${esc(u.es)}</div>${p===100?'<span class="pill g">Completada ✓</span>':p?'<span class="pill">En curso</span>':''}</a>`}).join('')}</div>
+  <h2>Niveles</h2><div class="lvsw">${LEVELS.map(l=>`<a class="lvc ${l===L?'on':''} ${C[l]?'':'soon'}" href="${C[l]?'#/nivel/'+l:'#/next'}"><b>${l}</b><span>${LVN[l]}</span>${C[l]?`<div class="bar"><i style="width:${lvPct(l)}%"></i></div><small>${units(l).length} unidades · ${lvPct(l)} %</small>`:'<small>Próximamente</small>'}</a>`).join('')}</div>
+  <h2>Tu ruta de aprendizaje · ${L}</h2><div class="path">${us.map((u,i)=>{const p=pct(u);return `<a class="unit-card u2" href="#/u/${u.id}" style="--uc:${u.color};animation-delay:${i*40}ms"><div class="uc-top"><span class="uc-ico">${ico(u)}</span>${ring(p,54,u.color)}</div><div class="n">${u.n}</div><b>${esc(u.title)}</b><div class="muted uc-es">${esc(u.es)}</div>${p===100?'<span class="pill g">Completada ✓</span>':p?'<span class="pill">En curso</span>':''}</a>`}).join('')}</div>
   <h2>Herramientas</h2><div class="grid tools">
   ${[['#/gramatica','📘','Gramática completa','Toda la teoría en una página'],['#/verbos','🔁','Conjugaciones','36 verbos + práctica'],['#/dico','📖','Diccionario','Busca en '+nWords+' palabras'],['#/repaso','🎯','Repaso aleatorio','15 ejercicios mezclados'],['#/fonetica','👄','Pronunciación','Sonidos y pares mínimos'],['#/ranking','🏆','Ranking y amigos','Compite cada semana'],['#/simulacro','📝','Simulacro DELF','¿Tienes ya el nivel?'],['#/next','🚀','Siguiente nivel','A2, B1, B2…']].map(t=>`<a class="tool" href="${t[0]}"><span>${t[1]}</span><div><b>${t[2]}</b><small>${t[3]}</small></div></a>`).join('')}</div>
   <section class="band"><span class="eyebrow">Método</span><h2>Cómo funciona cada unidad</h2><div class="steps">
   ${[['📘','Aprende','Lee la gramática explicada en español y escucha cada ejemplo.'],['🗂️','Memoriza','Tarjetas, parejas, test y dictado con el vocabulario.'],['💬','Escucha','Diálogos de la vida real en formato chat, con y sin traducción.'],['✏️','Practica','Ejercicios autocorregidos hasta llegar al 100 %.'],['🎤','Produce','Escribe y habla con modelos y lista de autoevaluación.']].map((s,k)=>`<div class="step"><div class="step-n">${k+1}</div><div class="step-i">${s[0]}</div><b>${s[1]}</b><p class="muted">${s[2]}</p></div>`).join('')}</div></section>
-  <section class="journey"><div><span class="eyebrow">Tu objetivo</span><h2>De cero al DELF, nivel a nivel</h2><p class="muted">Termina las 9 unidades, aprueba el simulacro y desbloquea el siguiente nivel.</p><a class="btn" href="#/next">Ver el plan completo →</a></div>
-  <div class="levels">${[['A1','Découverte','Ahora'],['A2','Survie','Próximo'],['B1','Seuil','Después'],['B2','Avancé','Meta']].map((l,k)=>`<div class="lv ${k===0?'cur':''}"><b>${l[0]}</b><span>${l[1]}</span><small>${l[2]}</small></div>`).join('')}</div></section>`;
+  <section class="journey"><div><span class="eyebrow">Tu objetivo</span><h2>De cero al DELF, nivel a nivel</h2><p class="muted">Termina las ${us.length} unidades de tu nivel, aprueba el simulacro y pasa al siguiente.</p><a class="btn" href="#/next">Ver el plan completo →</a></div>
+  <div class="levels">${LEVELS.map(l=>`<a class="lv ${l===L?'cur':''}" href="${C[l]?'#/nivel/'+l:'#/next'}"><b>${l}</b><span>${LVN[l]}</span><small>${l===L?'Tu nivel':C[l]?lvPct(l)+' %':'Próximamente'}</small></a>`).join('')}</div></section>`;
 }
 /* confeti */
 window.confetti=function(n){ const c=document.createElement('div'); c.className='confetti'; const cols=['#2346c8','#e0313f','#f5c04d','#138a5c','#5b3fd6','#fff'];
@@ -300,19 +305,19 @@ function guide(){
   <div class="note">El audio usa la voz francesa de tu navegador/sistema. Si suena en español, instala una voz «Français (France)» en la configuración de voz de Windows.</div>`;
 }
 function unitPage(id, tab){
-  const L=S.level, u=units(L).find(x=>x.id===id); if(!u){ home(); return; }
+  let u=units(S.level).find(x=>x.id===id); if(!u){ const lv=LEVELS.find(l=>units(l).some(x=>x.id===id)); if(!lv){ home(); return; } S.level=lv; save(); drawLevels(); drawSide(); drawTop(); u=units(lv).find(x=>x.id===id); } const L=S.level;
   const target=tab;
   const tabs=[['leccion','📘','Lección'],['vocab','🗂️','Vocabulario'],['dialogos','💬','Diálogos'],['cultura','🌍','Cultura'],['ejercicios','✏️','Ejercicios'],['produccion','🎤','Producción']];
   const vw=vocabOf(u).length;
   const i=units(L).indexOf(u), prev=units(L)[i-1], next=units(L)[i+1];
   let h=`<div class="ubanner full" style="--uc:${u.color}"><div class="ub-in"><div class="ub-txt"><div class="crumbs"><a href="#/">Inicio</a> / Unidades / <b>${u.n}</b></div><span class="eyebrow">Unidad ${u.n} · Nivel ${L}</span><h1>${esc(u.title)}</h1><p>${esc(u.es)}</p>
   <div class="ub-meta"><span>🎯 ${(u.goals||[]).length} objetivos</span><span>📘 ${(u.lessons||[]).length} lecciones</span><span>🗂️ ${vw} palabras</span><span>✏️ ${(u.ex||[]).length} ejercicios</span></div></div>
-  <div class="ub-ico">${ICON[u.id]||'📘'}</div><div class="ub-ring">${ring(pct(u),110,'#fff')}</div></div></div>
+  <div class="ub-ico">${ico(u)}</div><div class="ub-ring">${ring(pct(u),110,'#fff')}</div></div></div>
   <div class="chapter"><aside class="toc"><div class="toc-in"><div class="toc-h">En esta unidad</div>
   ${tabs.map((t,k)=>`<a href="#/u/${id}/${t[0]}" data-sec="${t[0]}"><span class="toc-n">${k+1}</span><span>${t[1]} ${t[2]}</span></a>`+(t[0]==='leccion'?`<div class="toc-sub">${(u.lessons||[]).map((s,j)=>`<a href="#/u/${id}/leccion" data-jump="l_${j}">${s.t.replace(/<[^>]+>/g,'')}</a>`).join('')}</div>`:'')).join('')}
   <div class="toc-prog">${ring(pct(u),64,u.color)}<div><b>Tu progreso</b><small class="muted">${exKeys(u).filter(k=>S.done[k]).length}/${(u.ex||[]).length} ejercicios</small></div></div></div></aside>
   <div class="chap-body">${tabs.map((t,k)=>`<section class="sec" id="sec_${t[0]}"><div class="sec-h"><span class="sec-n">${String(k+1).padStart(2,'0')}</span><h2>${t[2]}</h2></div><div class="sec-c" id="c_${t[0]}"></div></section>`).join('')}
-  <div class="pager">${prev?`<a href="#/u/${prev.id}"><small>← Anterior</small><b>${ICON[prev.id]||''} ${esc(prev.title)}</b></a>`:'<span></span>'}${next?`<a class="nx" href="#/u/${next.id}"><small>Siguiente →</small><b>${ICON[next.id]||''} ${esc(next.title)}</b></a>`:'<a class="nx" href="#/simulacro"><small>Siguiente →</small><b>📝 Simulacro DELF</b></a>'}</div></div></div>`;
+  <div class="pager">${prev?`<a href="#/u/${prev.id}"><small>← Anterior</small><b>${ico(prev)} ${esc(prev.title)}</b></a>`:'<span></span>'}${next?`<a class="nx" href="#/u/${next.id}"><small>Siguiente →</small><b>${ico(next)} ${esc(next.title)}</b></a>`:'<a class="nx" href="#/simulacro"><small>Siguiente →</small><b>📝 Simulacro DELF</b></a>'}</div></div></div>`;
   main.innerHTML=h;
   main.querySelectorAll('.toc a').forEach(a=>a.onclick=e=>{ e.preventDefault(); const el=a.dataset.jump?document.getElementById(a.dataset.jump):document.getElementById('sec_'+a.dataset.sec); if(el){ history.replaceState(null,'',a.getAttribute('href')); window.scrollTo({top:el.getBoundingClientRect().top+scrollY-80,behavior:'smooth'}); } });
   const io=new IntersectionObserver(es=>es.forEach(en=>{ if(en.isIntersecting){ main.querySelectorAll('.toc a[data-sec]').forEach(a=>a.classList.toggle('on',a.dataset.sec===en.target.id.slice(4))); } }),{rootMargin:'-30% 0px -60% 0px'});
@@ -321,7 +326,7 @@ function unitPage(id, tab){
   const c=$('#c_'+tab);
   if(tab==='leccion'){
     c.innerHTML=`<div class="card"><h3>🎯 Al final de esta unidad sabrás…</h3><ul class="clean">${(u.goals||[]).map(g=>`<li>${g}</li>`).join('')}</ul></div>`+
-    (u.lessons||[]).map((s,j)=>{ const t=s.t.replace(/<[^>]+>/g,''); const p=`Soy hispanohablante y estoy aprendiendo francés desde cero (nivel A1). Explícame en español, con mucho detalle y paso a paso, este tema de gramática/vocabulario: «${t}» (unidad «${u.title}»). Incluye: para qué sirve, cómo se forma, reglas y excepciones, comparación con el español, errores típicos de hispanohablantes, 10 ejemplos en francés con traducción y pronunciación aproximada, y al final 5 ejercicios cortos con sus soluciones.`; return `<div class="card" id="l_${j}"><h2 style="margin-top:0">${s.t}</h2>${s.h}<div class="more"><a class="btn alt" href="https://chatgpt.com/?q=${encodeURIComponent(p)}" target="_blank" rel="noopener">🧑‍🏫 Explícamelo más a fondo</a><span class="muted">Abre ChatGPT con una explicación detallada de este tema, ejemplos y ejercicios.</span></div></div>`; }).join('')+
+    (u.lessons||[]).map((s,j)=>{ const t=s.t.replace(/<[^>]+>/g,''); const p=`Soy hispanohablante y estoy aprendiendo francés (nivel ${S.level}). Explícame en español, con mucho detalle y paso a paso, este tema de gramática/vocabulario: «${t}» (unidad «${u.title}»). Incluye: para qué sirve, cómo se forma, reglas y excepciones, comparación con el español, errores típicos de hispanohablantes, 10 ejemplos en francés con traducción y pronunciación aproximada, y al final 5 ejercicios cortos con sus soluciones.`; return `<div class="card" id="l_${j}"><h2 style="margin-top:0">${s.t}</h2>${s.h}<div class="more"><a class="btn alt" href="https://chatgpt.com/?q=${encodeURIComponent(p)}" target="_blank" rel="noopener">🧑‍🏫 Explícamelo más a fondo</a><span class="muted">Abre ChatGPT con una explicación detallada de este tema, ejemplos y ejercicios.</span></div></div>`; }).join('')+
     (u.phon?`<div class="card"><h2 style="margin-top:0">👄 Pronunciación</h2>${u.phon}</div>`:'');
   }
   if(tab==='vocab'){
@@ -346,7 +351,7 @@ function unitPage(id, tab){
   }
   if(tab==='produccion'){
     const k=u.id;
-    const aiP=`Agis comme mon professeur de français. Je suis débutant (niveau A1) et je parle espagnol. Nous allons pratiquer une conversation orale sur ce thème : ${u.title} (${u.es}). Mes objectifs (en espagnol) : ${(u.goals||[]).join(" ; ")}. Fais-moi pratiquer ces objectifs un par un. Parle lentement, avec des phrases très simples. Pose-moi une question à la fois et attends ma réponse. Si je fais une erreur, corrige-moi gentiment en une phrase, puis continue. Si je ne comprends pas, répète plus simplement. Commence par me saluer.`;
+    const aiP=`Agis comme mon professeur de français. Mon niveau est ${S.level} et je parle espagnol. Nous allons pratiquer une conversation orale sur ce thème : ${u.title} (${u.es}). Mes objectifs (en espagnol) : ${(u.goals||[]).join(" ; ")}. Fais-moi pratiquer ces objectifs un par un. Parle lentement, avec des phrases très simples. Pose-moi une question à la fois et attends ma réponse. Si je fais une erreur, corrige-moi gentiment en une phrase, puis continue. Si je ne comprends pas, répète plus simplement. Commence par me saluer.`;
     const aiCard=`<div class="card ai"><h3>🤖 Conversación real con una IA</h3><p>Practica hablando en voz alta con una IA que responde con voz natural. Pulsa el botón: el mensaje para tu «profesor» se copia solo. Después activa el <b>modo voz</b> (icono de ondas 🎙️) y habla.</p><div class="row"><a class="btn" data-ai href="https://chatgpt.com/?q=${encodeURIComponent(aiP)}" target="_blank" rel="noopener">💬 Abrir ChatGPT</a></div><details><summary style="cursor:pointer;color:var(--blue)">Ver el mensaje</summary><div class="note">${esc(aiP)}</div></details></div>`;
     c.innerHTML=aiCard+(u.prod||[]).map((p,j)=>`<div class="card"><h3>${p.t}</h3><p>${p.h}</p>${p.model?`<details><summary style="cursor:pointer;color:var(--blue)">Ver un modelo</summary><div class="note fr" data-say="${esc(p.model)}">${esc(p.model)}</div></details>`:''}${p.oral?'':`<textarea data-n="${k}_${j}" placeholder="Escribe aquí en francés… (se guarda solo)">${esc(S.notes[k+'_'+j]||'')}</textarea><button class="btn alt" data-read="${k}_${j}">🔊 Leer mi texto</button>`}</div>`).join('')+
     `<div class="card"><h3>✅ Autoevaluación de la unidad</h3>${(u.goals||[]).map((g,j)=>`<label class="check"><input type="checkbox" data-c="${k}_g${j}" ${(S.notes[k+'_g'+j]||goalAuto(u,j))?'checked':''}> Puedo ${g.charAt(0).toLowerCase()+g.slice(1)} ${goalAuto(u,j)?'<span class="pill g">✓ conseguido con los ejercicios</span>':''}</label>`).join('')}</div>`;
@@ -369,9 +374,16 @@ function grammarAll(){
 }
 function verbs(){
   const V=C.verbs||[]; const P=['je','tu','il/elle/on','nous','vous','ils/elles'];
-  main.innerHTML=`<h1>🔁 Conjugaciones</h1><p class="muted">Presente, passé composé, futuro próximo e imperativo de los verbos del nivel. Pulsa una forma para oírla.</p><input class="search" id="vs" placeholder="Buscar verbo… (être, aller, manger…)"><div id="vl"></div>
+  main.innerHTML=`<h1>🔁 Conjugaciones</h1><p class="muted">Presente, passé composé, futuro próximo${S.level!=='A1'?', imperfecto, futuro simple':''} e imperativo de los verbos del nivel. Pulsa una forma para oírla.</p><input class="search" id="vs" placeholder="Buscar verbo… (être, aller, manger…)"><div id="vl"></div>
   <h2>Practica</h2><div id="vp"></div>`;
-  const draw=f=>{ $('#vl').innerHTML=V.filter(v=>!f||norm(v.inf+' '+v.es).includes(norm(f))).map(v=>`<div class="card"><h3><span class="fr" data-say="${v.inf}">${v.inf}</span> <span class="muted">— ${v.es}</span> <span class="pill ${v.g==='irregular'?'r':''}">${v.g}</span></h3><div class="tw"><table><tr><th></th><th>Presente</th><th>Passé composé</th><th>Futur proche</th></tr>${P.map((p,k)=>`<tr><td class="muted">${p}</td><td class="fr" data-say="${esc(pron(p,v.pr[k]))}">${esc(pron(p,v.pr[k]))}</td><td>${esc(pc(p,v,k))}</td><td>${esc(fp(p,v,k))}</td></tr>`).join('')}</table></div><p><b>Imperativo:</b> ${v.imp||'—'}</p></div>`).join(''); };
+  const draw=f=>{ $('#vl').innerHTML=V.filter(v=>!f||norm(v.inf+' '+v.es).includes(norm(f))).map(v=>`<div class="card"><h3><span class="fr" data-say="${v.inf}">${v.inf}</span> <span class="muted">— ${v.es}</span> <span class="pill ${v.g==='irregular'?'r':''}">${v.g}</span></h3><div class="tw"><table><tr><th></th><th>Presente</th><th>Passé composé</th><th>Futur proche</th>${adv?'<th>Imparfait</th><th>Futur simple</th>':''}</tr>${P.map((p,k)=>`<tr><td class="muted">${p}</td><td class="fr" data-say="${esc(pron(p,v.pr[k]))}">${esc(pron(p,v.pr[k]))}</td><td>${esc(pc(p,v,k))}</td><td>${esc(fp(p,v,k))}</td>${adv?`<td>${esc(imp(p,v,k))}</td><td>${esc(fut(p,v,k))}</td>`:''}</tr>`).join('')}</table></div><p><b>Imperativo:</b> ${v.imp||'—'}</p></div>`).join(''); };
+  const adv=S.level!=='A1';
+  const RF=['me','te','se','nous','vous','se'];
+  const eli=(r,w)=>/^[aeiouhéèêâ]/i.test(w)&&/e$/.test(r)?r.slice(0,-1)+"'"+w:r+' '+w;
+  function withSubj(p,k,v,form){ const sj=p.split('/')[0]; if(v.refl){ const x=eli(RF[k],form); return sj+' '+x; } return (sj==='je'&&/^[aeiouhéèêâ]/i.test(form)?"j'":sj+' ')+form; }
+  function imp(p,v,k){ let st=v.inf==='être'?'ét':v.pr[3].replace(/^nous /,'').replace(/ons$/,''); const E=['ais','ais','ait','ions','iez','aient'][k]; if(/[gc]e$|ç$/.test(st)&&/^i/.test(E)) st=st.replace(/ge$/,'g').replace(/ç$/,'c'); return withSubj(p,k,v,st+E); }
+  const FS={'être':'ser','avoir':'aur','aller':'ir','venir':'viendr','faire':'fer','pouvoir':'pourr','vouloir':'voudr','devoir':'devr','voir':'verr','savoir':'saur','acheter':'achèter','appeler':'appeller','se lever':'lèver','s’appeler':'appeller'};
+  function fut(p,v,k){ let st=FS[v.inf]; if(!st){ st=v.inf.replace(/^se |^s['’]/,''); if(/re$/.test(st)) st=st.slice(0,-1); } return withSubj(p,k,v,st+['ai','as','a','ons','ez','ont'][k]); }
   function pron(p,f){ const s=p.split('/')[0]; if(s==='je'&&/^[aeiouhéèêy]/i.test(f)) return "j'"+f; return s+' '+f; }
   const AV=['ai','as','a','avons','avez','ont'], ET=['suis','es','est','sommes','êtes','sont'], AL=['vais','vas','va','allons','allez','vont'];
   function pc(p,v,k){ const aux=v.aux==='être'?ET[k]:AV[k]; let pp=v.pp; if(v.aux==='être'&&k>=3) pp+='s'; const pre=(v.refl?(['me','te','se','nous','vous','se'][k]+' '):''); const s=p.split('/')[0]; let a=(v.refl?pre:'')+aux; a=a.replace(/^me ([aeiouéêè])/,"m'$1").replace(/^te ([aeiouéêè])/,"t'$1").replace(/^se ([aeiouéêè])/,"s'$1"); return (s==='je'&&/^[aeiou]/.test(a)?"j'":s+' ')+a+' '+pp+(v.aux==='être'&&k<3?'(e)':v.aux==='être'?'':''); }
@@ -433,7 +445,26 @@ function simulacro(){
     if(sc>old){ S.exam[S.level]=sc; const g=addXP(sc-old); touchDay(); if(g) toast('+'+g+' ⭐ por mejorar tu nota'); if(sc>=70) confetti(100); } save();
     $('#resout').innerHTML=`<div class="score">${ok}/${keys.length}</div><p class="muted">Mejor nota: ${S.exam[S.level]||0} % · <a href="#/simulacro" id="again2">Repetir el simulacro</a></p><p>Comprensión oral + escrita ≈ <b>${p}/50</b> puntos. Para aprobar el DELF necesitas 50/100 en total y al menos 5/25 en cada parte. ${p>=40?'🎉 ¡Muy buen nivel de comprensión!':p>=25?'Vas bien, repasa las unidades donde más fallas.':'Repasa las unidades y vuelve a intentarlo.'}</p>`; $('#again2').onclick=ev=>{ ev.preventDefault(); simulacro(); window.scrollTo({top:0,behavior:'instant'}); }; };
 }
-function nextLevel(){ main.innerHTML=C.nextInfo||''; const us=units('A1'); const box=document.getElementById('readiness'); if(box){ const ok=us.every(u=>pct(u)>=80), ex=(S.exam.A1||0)>=70; box.innerHTML=`<label class="check"><input type="checkbox" disabled ${ok?'checked':''}> Todas las unidades A1 al 80 % o más</label><label class="check"><input type="checkbox" disabled ${ex?'checked':''}> Simulacro DELF A1 con 70 % o más en la parte autocorregida (mejor nota: ${S.exam.A1||0} %)</label><p class="big">${ok&&ex?'🎉 <b>¡Estás listo para el A2!</b>':'Todavía no: sigue con el A1.'}</p>`; } }
+function nextLevel(){
+  const L=S.level, i=LEVELS.indexOf(L), nx=LEVELS[i+1], us=units(L);
+  const ok=us.length&&us.every(u=>pct(u)>=80), ex=(S.exam[L]||0)>=70, hasExam=!!(C.exam&&C.exam[L]);
+  main.innerHTML=`<h1>🚀 Tu camino: A1 → A2 → B1 → B2</h1>
+  <div class="lvsw">${LEVELS.map(l=>`<a class="lvc ${l===L?'on':''} ${C[l]?'':'soon'}" href="${C[l]?'#/nivel/'+l:'#/next'}"><b>${l}</b><span>${LVN[l]}</span>${C[l]?`<div class="bar"><i style="width:${lvPct(l)}%"></i></div><small>${units(l).length} unidades · ${lvPct(l)} %</small>`:'<small>Próximamente</small>'}</a>`).join('')}</div>
+  <div class="card"><h2 style="margin-top:0">¿Has terminado el ${L}?</h2>
+  <label class="check"><input type="checkbox" disabled ${ok?'checked':''}> Todas las unidades ${L} al 80 % o más</label>
+  ${hasExam?`<label class="check"><input type="checkbox" disabled ${ex?'checked':''}> Simulacro DELF ${L} con 70 % o más en la parte autocorregida (mejor nota: ${S.exam[L]||0} %)</label>`:''}
+  <p class="big">${ok&&(ex||!hasExam)?(nx&&C[nx]?`🎉 <b>¡Estás listo para el ${nx}!</b> <a class="btn" href="#/nivel/${nx}">Empezar el ${nx} →</a>`:`🎉 <b>¡Nivel ${L} superado!</b> ${nx?'El '+nx+' llegará pronto.':''}`):'Todavía no: sigue con el '+L+'. Puedes cambiar de nivel cuando quieras, pero es mejor ir en orden.'}</p></div>
+  <div class="card"><h2 style="margin-top:0">El mapa de niveles (MCER)</h2>`+TB(['Nivel','Horas aprox. acumuladas','Qué podrás hacer','Diploma'],[
+  ['A1 · Découverte','60–100 h','Presentarte, hablar de tu entorno inmediato con frases simples','DELF A1'],
+  ['A2 · Survie','160–200 h','Contar experiencias en pasado, hacer gestiones en la vida diaria','DELF A2'],
+  ['B1 · Seuil','350–400 h','Desenvolverte en viajes, dar tu opinión, contar sueños y proyectos','DELF B1'],
+  ['B2 · Avancé','550–650 h','Argumentar, entender noticias y series, trabajar en francés','DELF B2']])+`</div>
+  <div class="card"><h2 style="margin-top:0">Recursos gratuitos para complementar</h2><ul class="clean">
+  <li><b>TV5Monde – Apprendre le français</b>: ejercicios con vídeos reales por nivel.</li>
+  <li><b>RFI – Journal en français facile</b>: noticias diarias en francés sencillo.</li>
+  <li><b>France Éducation international</b>: ejemplos oficiales de exámenes DELF.</li>
+  <li>Series con subtítulos en francés, canciones con letra y podcasts para estudiantes.</li></ul></div>`;
+}
 
 /* ---------- social: ranking y amigos ---------- */
 function ranking(tab){
@@ -471,7 +502,8 @@ function ranking(tab){
 
 /* ---------- router ---------- */
 function route(){
-  const h=(location.hash||'#/').slice(2).split('/');
+  let h=(location.hash||'#/').slice(2).split('/');
+  if(h[0]==='nivel'){ if(C[h[1]]){ S.level=h[1]; save(); drawLevels(); } history.replaceState(null,'','#/'); h=['']; }
   if(!C[S.level] && !['next','guia'].includes(h[0])) { S.level='A1'; drawLevels(); }
   drawSide(); drawTop(); window.scrollTo({top:0,left:0,behavior:'instant'}); document.body.dataset.page=h[0]||'home';
   const R={'':home,guia:guide,gramatica:grammarAll,verbos:verbs,dico,repaso:review,fonetica:phonetics,delf,simulacro,next:nextLevel,ranking:()=>ranking()};

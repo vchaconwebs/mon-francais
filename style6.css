@@ -1,0 +1,28 @@
+/* ===== v40: varios niveles ===== */
+.lvsw{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:6px 0 10px}
+.lvc{position:relative;display:flex;flex-direction:column;gap:2px;padding:18px 18px 16px;border-radius:20px;background:var(--panel);border:1.5px solid var(--line);
+  text-decoration:none;color:var(--ink);box-shadow:var(--sh);transition:transform .2s,border-color .2s,box-shadow .2s;overflow:hidden}
+.lvc:hover{transform:translateY(-3px);border-color:var(--blue);box-shadow:var(--sh2)}
+.lvc b{font-family:Fraunces,serif;font-size:2rem;line-height:1}
+.lvc span{font-weight:600}
+.lvc small{color:var(--muted);font-size:.8rem;margin-top:6px}
+.lvc .bar{margin-top:10px}
+.lvc.on{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border-color:transparent;box-shadow:0 14px 30px -14px var(--blue)}
+.lvc.on small{color:#ffffffd0}
+.lvc.on .bar{background:#ffffff35}
+.lvc.on .bar i{background:#fff}
+.lvc.on::after{content:"Tu nivel";position:absolute;top:12px;right:12px;font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:#ffffff2e;padding:3px 9px;border-radius:999px}
+.lvc.soon{opacity:.6;border-style:dashed;box-shadow:none}
+.lvc.soon:hover{transform:none;border-color:var(--line);box-shadow:none}
+@media(max-width:860px){.lvsw{grid-template-columns:1fr 1fr}}
+
+/* selector de nivel en el menú lateral */
+.side-lv{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--bg2);padding:4px;border-radius:12px;margin:0 4px 6px}
+.side .side-lv a{justify-content:center;padding:7px 0;font-weight:800;font-size:.85rem;color:var(--muted)}
+.side .side-lv a.on{background:var(--panel);color:var(--blue);box-shadow:var(--sh)}
+.side .side-lv a.lock{opacity:.45}
+.side .side-lv a:hover{transform:none}
+
+/* niveles de la banda «De cero al DELF» como enlaces */
+a.lv{text-decoration:none;color:#fff;transition:transform .2s}
+a.lv:hover{transform:translateY(-3px)}
